@@ -1,4 +1,6 @@
+using System;
 using GameDevTV.RTS.Player;
+using GameDevTV.RTS.Units;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -7,15 +9,17 @@ namespace GameDevTV.RTS
 {
     public class PlayerInput : MonoBehaviour
     {
-        [SerializeField] private Transform cameraTarget;
+        [SerializeField] private Rigidbody cameraTarget;
         [SerializeField] private CinemachineCamera cinemachineCamera;
         [SerializeField] private CameraConfig cameraConfig;
+        [SerializeField] private new Camera camera;
 
         private CinemachineFollow cinemachineFollow;
         private float zoomStartTime;
         private float rotationStartTime;
         private Vector3 startingFollowOffset;
         private float maxRotationAmount;
+        private ISelectable selectedUnit;
 
         private void Awake()
         {
@@ -32,6 +36,26 @@ namespace GameDevTV.RTS
             HandleZooming();
             HandlePanning();
             HandleRotation();
+            HandleLeftClick();
+        }
+
+        private void HandleLeftClick() {
+            if (camera == null) { return; }
+
+            Ray ray = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+            if (Mouse.current.leftButton.wasReleasedThisFrame) {
+                if (selectedUnit != null) {
+                    selectedUnit.Deselect();
+                    selectedUnit = null;
+                }
+
+                if (Physics.Raycast(ray, out RaycastHit hit, float.MaxValue, LayerMask.GetMask("Default"))
+                    && hit.collider.TryGetComponent(out ISelectable selectable)) {
+                    selectable.Select();
+                    selectedUnit = selectable;
+                }
+            }
         }
 
         private void HandleZooming() {
@@ -43,7 +67,7 @@ namespace GameDevTV.RTS
             float zoomTime = Mathf.Clamp01((Time.time - zoomStartTime) * cameraConfig.ZoomSpeed);
             Vector3 targetFollowOffset;
 
-            if (Keyboard.current.endKey.isPressed)
+            if (Keyboard.current.endKey.isPressed || Keyboard.current.zKey.isPressed)
             {
                 targetFollowOffset = new Vector3(
                     cinemachineFollow.FollowOffset.x,
@@ -70,7 +94,9 @@ namespace GameDevTV.RTS
         private bool ShouldSetZoomStartTime()
         {
             return Keyboard.current.endKey.wasPressedThisFrame
-                   || Keyboard.current.endKey.wasReleasedThisFrame;
+                   || Keyboard.current.endKey.wasReleasedThisFrame
+                   || Keyboard.current.zKey.wasPressedThisFrame
+                   || Keyboard.current.zKey.wasReleasedThisFrame;
         }
 
 
@@ -79,8 +105,7 @@ namespace GameDevTV.RTS
             Vector2 moveAmount = GetKeyboardMoveAmount();
             moveAmount += GetMouseMoveAmount();
             
-            moveAmount *= Time.deltaTime;
-            cameraTarget.position += new Vector3(moveAmount.x, 0, moveAmount.y);
+            cameraTarget.linearVelocity = new Vector3(moveAmount.x, 0, moveAmount.y);
         }
 
         private void HandleRotation()
@@ -94,7 +119,7 @@ namespace GameDevTV.RTS
 
             Vector3 targetFollowOffset;
 
-            if (Keyboard.current.pageDownKey.isPressed)
+            if (Keyboard.current.pageDownKey.isPressed || Keyboard.current.eKey.isPressed)
             {
                 targetFollowOffset = new Vector3(
                     maxRotationAmount,
@@ -102,7 +127,7 @@ namespace GameDevTV.RTS
                     0
                 );
             }
-            else if (Keyboard.current.pageUpKey.isPressed)
+            else if (Keyboard.current.pageUpKey.isPressed || Keyboard.current.qKey.isPressed)
             {
                 targetFollowOffset = new Vector3(
                     -maxRotationAmount,
@@ -130,19 +155,19 @@ namespace GameDevTV.RTS
         private Vector2 GetKeyboardMoveAmount() {
             Vector2 moveAmount = Vector2.zero;
 
-            if (Keyboard.current.upArrowKey.isPressed)
+            if (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed)
             {
                 moveAmount.y += cameraConfig.KeyboardPanSpeed;
             }
-            if (Keyboard.current.leftArrowKey.isPressed)
+            if (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed)
             {
                 moveAmount.x -= cameraConfig.KeyboardPanSpeed;
             }
-            if (Keyboard.current.downArrowKey.isPressed)
+            if (Keyboard.current.downArrowKey.isPressed || Keyboard.current.sKey.isPressed)
             {
                 moveAmount.y -= cameraConfig.KeyboardPanSpeed;
             }
-            if (Keyboard.current.rightArrowKey.isPressed)
+            if (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed)
             {
                 moveAmount.x += cameraConfig.KeyboardPanSpeed;
             }
@@ -183,12 +208,13 @@ namespace GameDevTV.RTS
 
 
 
-        private bool ShouldSetRotationStartTime()
-        {
+        private bool ShouldSetRotationStartTime() {
             return Keyboard.current.pageUpKey.wasPressedThisFrame
                    || Keyboard.current.pageUpKey.wasReleasedThisFrame
                    || Keyboard.current.pageDownKey.wasPressedThisFrame
-                   || Keyboard.current.pageDownKey.wasReleasedThisFrame;
+                   || Keyboard.current.pageDownKey.wasReleasedThisFrame
+                   || Keyboard.current.qKey.wasPressedThisFrame
+                   || Keyboard.current.qKey.wasReleasedThisFrame;
         }
     }
 }

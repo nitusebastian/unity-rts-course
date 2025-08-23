@@ -83,3 +83,22 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 [Aa]ssets/[Ss]treamingAssets/aa.meta
 [Aa]ssets/[Ss]treamingAssets/aa/*
+ 
+# Visual Studio
+.vs/
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Android/Gradle and signing keys
+.gradle/
+*.keystore
+*.jks
+*.keystore.meta
+*.jks.meta
+
+# Unity artifacts and coverage outputs
+[Aa]rtifacts/
+[Tt]est[Rr]esults*/
+CoverageResults/
